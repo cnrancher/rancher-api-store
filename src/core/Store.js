@@ -10,6 +10,7 @@ import Error  from '../models/Error'
 import Schema  from '../models/Schema'
 import Collection  from '../models/Collection'
 
+
 export const defaultMetaKeys = [
   'type',
   'actions',
@@ -145,10 +146,19 @@ class Store {
 
   // Synchronously returns whether this exact record object is in the local cache
   hasRecord(obj) {
-    if (!obj) return false
+    if (!obj) {
+      return false
+    }
+
     const type = normalizeType(obj.type)
     const group = this._groupMap(type)
     return group[obj.id] === obj
+  }
+
+  hasType(name) {
+    const type = normalizeType(name, this);
+    const group = this._groupMap(type);
+    return !!group;
   }
 
   haveAll(type) {
@@ -329,7 +339,7 @@ class Store {
   //  filter: Filter by fields, e.g. {field: value, anotherField: anotherValue} (default: none)
   //  include: Include link information, e.g. ['link', 'anotherLink'] (default: none)
   //  forceReload: Ask the server even if the type+id is already in cache. (default: false)
-  //  limit: Number of reqords to return per page (default: 1000)
+  //  limit: Number of records to return per page (default: 1000)
   //  depaginate: If the response is paginated, retrieve all the pages. (default: true)
   //  headers: Headers to send in the request (default: none).  Also includes ones specified in the model constructor.
   //  url: Use this specific URL instead of looking up the URL for the type/id.  This should only be used for bootstrap
@@ -364,7 +374,7 @@ class Store {
     } else {
       // Otherwise lookup the schema for the type and generate the URL based on it.
       return this
-        .find('schema', type, {url: `schemas/${encodeURIComponent(type)}`})
+        .find('schema', type, {...opt, url: `schemas/${encodeURIComponent(type)}`})
         .then(schema => {
           const url = schema.linkFor('collection') + (id ? '/' + encodeURIComponent(id) : '')
           return this._findWithUrl(url, type, opt)
@@ -407,7 +417,7 @@ class Store {
     }
     if (response.data && typeof response.data === 'object') {
       response = this._typeify(response.data)
-      delete response.data
+
       Object.defineProperty(response, 'response', {value: response, configurable: true})
 
       // Note which keys were included in each object
